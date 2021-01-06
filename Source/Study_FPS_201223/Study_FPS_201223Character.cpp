@@ -5,6 +5,7 @@
 #include "Animation/AnimInstance.h"
 #include "Camera/CameraComponent.h"
 #include "Components/CapsuleComponent.h"
+#include "Components/SceneComponent.h"
 #include "Components/InputComponent.h"
 #include "GameFramework/InputSettings.h"
 #include "HeadMountedDisplayFunctionLibrary.h"
@@ -83,6 +84,9 @@ AStudy_FPS_201223Character::AStudy_FPS_201223Character()
 	// Uncomment the following line to turn motion controllers on by default:
 	//bUsingMotionControllers = true;
 
+	//SetRecoiling
+	isRecoiling = false;
+
 	//SetFiring
 	isFiring = false;
 
@@ -90,6 +94,10 @@ AStudy_FPS_201223Character::AStudy_FPS_201223Character()
 	bullet_num = 25;// ÇöÀç °¡Áø ÃÑÅº 
 	bullet_limit = 25;//ÅºÃ¢ ÇÏ³ªÀÇ Å©±â
 	bullet_MAX = 300;//ÃÖ´ë·Î °¡Áú ¼ö ÀÖ´Â ÃÑÅº
+
+	//ToEnableTick
+	PrimaryActorTick.bCanEverTick = true;
+	PrimaryActorTick.bStartWithTickEnabled = true;
 }
 
 void AStudy_FPS_201223Character::BeginPlay()
@@ -170,12 +178,12 @@ void AStudy_FPS_201223Character::Fire()
 	{		
 		if (bullet_num == 0)
 		{
-			GetWorld()->GetTimerManager().SetTimer(timer, this, &AStudy_FPS_201223Character::Reload, .5f, false);
+			GetWorld()->GetTimerManager().SetTimer(firetimer, this, &AStudy_FPS_201223Character::Reload, .5f, false);
 		}
 		else
 		{
 			AStudy_FPS_201223Character::OnFire();
-			GetWorld()->GetTimerManager().SetTimer(timer, this, &AStudy_FPS_201223Character::Fire, .1f, false);
+			GetWorld()->GetTimerManager().SetTimer(firetimer, this, &AStudy_FPS_201223Character::Fire, .1f, false);
 		}
 	}
 
@@ -197,13 +205,13 @@ void AStudy_FPS_201223Character::OnFire()
 			UWorld* const World = GetWorld();
 			if (World != NULL)
 			{
-				if (bUsingMotionControllers)
+				if (bUsingMotionControllers)//vr
 				{
 					const FRotator SpawnRotation = VR_MuzzleLocation->GetComponentRotation();
 					const FVector SpawnLocation = VR_MuzzleLocation->GetComponentLocation();
 					World->SpawnActor<AStudy_FPS_201223Projectile>(ProjectileClass, SpawnLocation, SpawnRotation);
 				}
-				else
+				else//not vr
 				{
 					const FRotator SpawnRotation = GetControlRotation();
 					// MuzzleOffset is in camera space, so transform it to world space before offsetting from the character location to find the final muzzle position
@@ -235,6 +243,9 @@ void AStudy_FPS_201223Character::OnFire()
 				AnimInstance->Montage_Play(FireAnimation, 1.f);
 			}
 		}
+
+		//here to recoil function
+		GunRecoil();
 	}
 	else
 	{
@@ -243,6 +254,17 @@ void AStudy_FPS_201223Character::OnFire()
 	}
 }
 
+void AStudy_FPS_201223Character::GunRecoil()
+{
+	int min_sensitivity = 20;
+	int max_sensitivity = 10;
+
+	float PitchRecoil = (float)(FMath::RandRange(-10, -15) / max_sensitivity);
+	float YawRecoil = (float)(FMath::RandRange(-10, 10) / min_sensitivity);
+
+	APawn::AddControllerPitchInput(PitchRecoil);
+	APawn::AddControllerYawInput(YawRecoil);
+}
 
 void AStudy_FPS_201223Character::Reload()
 {
@@ -371,4 +393,12 @@ bool AStudy_FPS_201223Character::EnableTouchscreenMovement(class UInputComponent
 	}
 	
 	return false;
+}
+
+
+void AStudy_FPS_201223Character::Tick(float DeltaTime)
+{
+	Super::Tick(DeltaTime);
+
+	AddActorWorldRotation(FRotator(0.0f, 300.0f* DeltaTime, 0.0f));
 }

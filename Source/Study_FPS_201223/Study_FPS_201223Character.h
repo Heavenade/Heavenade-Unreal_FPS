@@ -83,7 +83,9 @@ public:
 protected:
 	
 	/*Timer*/
-	FTimerHandle timer;
+	FTimerHandle firetimer;
+
+	FTimerHandle recoiltimer;
 
 	/*Bullet*/
 	int bullet_num;// 현재 가진 총탄 
@@ -105,6 +107,14 @@ protected:
 
 	//단발
 	void OnFire();
+
+	/* Gun Recoil */
+	void GunRecoil();
+	void OnRecoil();
+
+	//반동처리중인가?
+	bool isRecoiling;
+
 
 	/** Resets HMD orientation and position in VR. */
 	void OnResetVR();
@@ -158,6 +168,10 @@ public:
 	FORCEINLINE class USkeletalMeshComponent* GetMesh1P() const { return Mesh1P; }
 	/** Returns FirstPersonCameraComponent subobject **/
 	FORCEINLINE class UCameraComponent* GetFirstPersonCameraComponent() const { return FirstPersonCameraComponent; }
+
+
+	// Called every frame
+	virtual void Tick(float DeltaSeconds) override;
 
 };
 
